@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "frp": 120,
+        "slope": 35
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [78.10, 30.05]
+      }
+    }
+  ],
+  "hours_to_predict": 4
+}

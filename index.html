@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Uttarakhand Forest Fire Prediction & Simulation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            margin: 0;
+            padding: 0;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header h1 i {
+            font-size: 2.8rem;
+            color: #4ecdc4;
+        }
+
+        .header p {
+            margin: 15px 0 0 0;
+            color: #b8c5d6;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #map {
+            height: 650px;
+            width: 100%;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: #e0e0e0;
+            font-size: 1rem;
+        }
+
+        .control-group input, .control-group select {
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            font-size: 14px;
+            backdrop-filter: blur(5px);
+        }
+
+        .control-group input:focus, .control-group select:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+
+        .control-group input[type="range"] {
+            flex: 1;
+            max-width: 350px;
+            background: transparent;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            background: #ff6b6b;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+        }
+
+        .status {
+            font-weight: 500;
+            color: #4ecdc4;
+            margin-left: 20px;
+            font-size: 1.1rem;
+        }
+
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-card h3 {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 1.3rem;
+        }
+
+        .legend {
+            line-height: 20px;
+            color: #b8c5d6;
+        }
+
+        .legend i {
+            width: 20px;
+            height: 20px;
+            float: left;
+            margin-right: 10px;
+            opacity: 0.8;
+            border-radius: 50%;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 15, 35, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            font-size: 1.5rem;
+            flex-direction: column;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .loading::before {
+            content: '';
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .summary-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .summary-section h3 {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .summary-list {
+            list-style-type: decimal;
+            padding-left: 20px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .summary-list li {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4ecdc4;
+        }
+
+        .summary-list li strong {
+            color: #ff6b6b;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(255, 107, 107, 0.8); }
+        }
+
+        .log-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(15px);
+            color: #e0e0e0;
+            border-radius: 20px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow: hidden;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        /* Simulation overlay controls (bottom-left) */
+        .sim-overlay {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            z-index: 1002;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sim-btn {
+            background: linear-gradient(45deg, #ff6b6b, #d9534f);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .sim-btn.secondary {
+            background: linear-gradient(45deg, #6c757d, #495057);
+        }
+
+        .sim-time-display {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            z-index: 1002;
+            color: #ffffff;
+            background: rgba(0,0,0,0.4);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #ff6b6b;
+            font-size: 1.1rem;
+        }
+
+        .log-content {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #ff6b6b rgba(255, 255, 255, 0.1);
+        }
+
+        .log-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .log-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .log-content::-webkit-scrollbar-thumb {
+            background: #ff6b6b;
+            border-radius: 3px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4ecdc4;
+            transition: background 0.3s ease;
+        }
+
+        .log-entry:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .control-group {
+                justify-content: space-between;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+            .log-container {
+                width: 90%;
+                left: 5%;
+                right: 5%;
+                bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-fire"></i> Uttarakhand Forest Fire Prediction & Simulation</h1>
+        <p>Advanced ML-powered fire spread modeling for Uttarakhand forests</p>
+    </div>
+
+    <div class="container">
+        <div id="map"></div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="time-value">Prediction Duration:</label>
+                <input type="number" id="time-value" min="1" max="100" value="4">
+                <select id="time-unit" class="bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200 ease-in-out hover:bg-gray-700">
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                </select>
+            </div>
+            <button id="predict-btn" class="btn-primary" onclick="fetchData()">🚀 Run Prediction</button>
+            <button id="demo-btn" class="btn-primary" onclick="runDemoPrediction()" style="background: linear-gradient(45deg, #4ecdc4, #ff6b6b);">🎯 Demo with Hardcoded Data</button>
+            <div class="control-group">
+                <label for="time-slider">Timeline:</label>
+                <input type="range" id="time-slider" min="0" max="4" value="0" step="1" oninput="updateMapLayer(this.value)">
+                <span id="current-time" class="status">0 (Initial Fire)</span>
+            </div>
+                <div class="control-group">
+                    <label for="speed-slider">Playback Speed:</label>
+                    <input type="range" id="speed-slider" min="100" max="2000" step="50" value="800" oninput="updateSpeed(this.value)">
+                    <span id="speed-value" class="status">800 ms/step</span>
+                </div>
+            <div class="control-group">
+                <button id="pause-btn" class="btn-primary" onclick="pauseAnimation()">⏸️ Pause</button>
+                <button id="reset-btn" class="btn-primary" onclick="resetAnimation()">🔄 Reset</button>
+            </div>
+        </div>
+
+        <div id="summary-section" class="summary-section" style="display: none;">
+            <h3>📊 Prediction Summary</h3>
+            <ol class="summary-list" id="summary-list">
+                <!-- Aggregated results will be inserted here -->
+            </ol>
+        </div>
+
+        <div id="charts-section" class="summary-section" style="display: none;">
+            <h3>📈 Fire Spread Analytics</h3>
+            <div class="charts-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+                <div class="chart-card">
+                    <h4 style="color: #ffffff; margin-bottom: 15px;">Spread Probability Distribution</h4>
+                    <canvas id="spreadChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4 style="color: #ffffff; margin-bottom: 15px;">Fire Intensity Over Time</h4>
+                    <canvas id="intensityChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4 style="color: #ffffff; margin-bottom: 15px;">Risk Level Breakdown</h4>
+                    <canvas id="riskChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4 style="color: #ffffff; margin-bottom: 15px;">Spread Distance vs Time</h4>
+                    <canvas id="distanceChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4 style="color: #ffffff; margin-bottom: 15px;">Spread Probability vs. Fire Intensity</h4>
+                    <canvas id="scatterChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4 style="color: #ffffff; margin-bottom: 15px;">Cumulative Affected Area Over Time</h4>
+                    <canvas id="areaChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-card">
+                <h3>📊 About This Tool</h3>
+                <p>This simulation uses machine learning to predict forest fire spread based on factors like FRP (Fire Radiative Power), slope, temperature, humidity, wind speed, fuel dryness, population density, and distance to roads.</p>
+            </div>
+            <div class="info-card">
+                <h3>📈 How It Works</h3>
+                <p>Select a time duration and unit, then click "Run Prediction" to simulate fire spread. Use the timeline slider to view different time steps. Red markers show initial fire, colored circles show predicted spread with risk levels.</p>
+            </div>
+            <div class="info-card">
+                <h3>📋 Historical Data</h3>
+                <p>Access historical fire records from the <a href="http://127.0.0.1:8000/api/v1/historical-fires" target="_blank" style="color: #007bff;">API endpoint</a>. This helps in understanding past patterns and validating predictions.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <div>🔥 Calculating fire spread simulation...</div>
+    </div>
+    
+    <div class="sim-time-display" id="sim-time-display">Time: 0h 0m</div>
+    
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Heatmap plugin for Leaflet -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+    <script>
+        // --- CONFIGURATION ---
+        const MAP_CENTER = [30.05, 78.10]; // Center of Uttarakhand
+        const API_URL = 'http://127.0.0.1:8000/api/v1/predict-spread';
+
+        // Uttarakhand bounds (approximate)
+        const UTTARAKHAND_BOUNDS = [
+            [28.7, 77.5], // Southwest corner
+            [31.5, 80.1]  // Northeast corner
+        ];
+
+        let map = L.map('map', {
+            maxBounds: UTTARAKHAND_BOUNDS,
+            maxBoundsViscosity: 1.0,
+            minZoom: 8,
+            maxZoom: 12,
+            noWrap: true,
+            continuousWorld: false,
+            worldCopyJump: false
+        });
+
+        // Fit the map to Uttarakhand bounds to show only this region
+        map.fitBounds(UTTARAKHAND_BOUNDS);
+
+        // Reinforce max bounds after fitting
+        map.setMaxBounds(UTTARAKHAND_BOUNDS);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+    let currentLayer = null;
+    let currentHeat = null;
+        let simulationData = {};
+        
+        // Function to determine color based on spread probability
+        function getProbColor(prob) {
+            return prob > 0.8 ? '#800026' : // Very High Risk (Dark Red)
+                   prob > 0.6 ? '#E31A1C' : // High Risk
+                   prob > 0.4 ? '#FD8D3C' : // Medium Risk
+                   '#FEB24C';             // Low Risk
+        }
+
+        // --- DUMMY INPUT (Simulating live data from an active fire) ---
+        let DUMMY_INPUT = {
+            "type": "FeatureCollection",
+            "features": [{
+                "type": "Feature",
+                "properties": {
+                    "frp": 120, // High Fire Intensity
+                    "slope": 35 // High Slope
+                },
+                "geometry": {
+                    "type": "Point",
+                    // Rajaji National Park ke aas-pass ka location
+                    "coordinates": [78.10, 30.05]
+                }
+            }],
+            "hours_to_predict": 4 // Default to 4 hours
+        };
+
+        // --- DEMO PREDICTION FUNCTION ---
+        function runDemoPrediction() {
+            // Use hardcoded dataset for demo
+            const demoData = {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "frp": 120,
+                            "slope": 35,
+                            "temp": 32,
+                            "humidity": 25,
+                            "wind_speed": 8,
+                            "fuel_dryness": 0.2,
+                            "pop_density": 5,
+                            "dist_to_road": 500
+                        },
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [78.10, 30.05]
+                        }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "frp": 150,
+                            "slope": 45,
+                            "temp": 35,
+                            "humidity": 20,
+                            "wind_speed": 12,
+                            "fuel_dryness": 0.8,
+                            "pop_density": 3,
+                            "dist_to_road": 100
+                        },
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [78.15, 30.08]
+                        }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "frp": 95,
+                            "slope": 15,
+                            "temp": 28,
+                            "humidity": 45,
+                            "wind_speed": 5,
+                            "fuel_dryness": 0.1,
+                            "pop_density": 12,
+                            "dist_to_road": 2000
+                        },
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [78.05, 30.02]
+                        }
+                    }
+                ],
+                "hours_to_predict": 4
+            };
+
+            // Show loading overlay
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('current-time').innerText = `0 hours (Calculating Demo...)`;
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(demoData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                simulationData = data.timesteps;
+                let maxHours = Object.keys(simulationData).length - 1;
+
+                // Update Slider
+                document.getElementById('time-slider').max = maxHours;
+                document.getElementById('time-slider').value = 0;
+
+                // Animate the fire spread on the map
+                animateSpread(data.timesteps);
+
+                // Hide loading overlay
+                document.getElementById('loading').classList.remove('show');
+
+                // Display logs in a Gen Z style
+                displayLogs(data.logs);
+
+                // Generate and display prediction summary
+                displayPredictionSummary(data.logs, 4, 'hours');
+
+                // Success notification
+                showNotification(`🔥 Demo prediction completed using hardcoded dataset!`, 'success');
+            })
+            .catch(error => {
+                console.error('Error fetching demo prediction:', error);
+                document.getElementById('loading').classList.remove('show');
+                showNotification('❌ Server Connection Error. Check if FastAPI is running at http://127.0.0.1:8000 and Model is Loaded.', 'error');
+            });
+        }
+
+        // --- API CALL FUNCTION ---
+        function fetchData() {
+            let timeValue = parseInt(document.getElementById('time-value').value);
+            let timeUnit = document.getElementById('time-unit').value;
+
+            // Convert to hours based on unit
+            let hoursToPredict;
+            switch(timeUnit) {
+                case 'hours': hoursToPredict = timeValue; break;
+                case 'days': hoursToPredict = timeValue * 24; break;
+                case 'weeks': hoursToPredict = timeValue * 24 * 7; break;
+                case 'months': hoursToPredict = timeValue * 24 * 30; break; // Approximate 30 days
+                case 'years': hoursToPredict = timeValue * 24 * 365; break; // Approximate 365 days
+                default: hoursToPredict = timeValue;
+            }
+
+            DUMMY_INPUT.hours_to_predict = hoursToPredict;
+
+            // Show loading overlay
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('current-time').innerText = `0 ${timeUnit} (Calculating...)`;
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(DUMMY_INPUT)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                simulationData = data.timesteps;
+                let maxHours = Object.keys(simulationData).length - 1;
+
+                // Update Slider
+                document.getElementById('time-slider').max = maxHours;
+                document.getElementById('time-slider').value = 0;
+
+                // Animate the fire spread on the map
+                animateSpread(data.timesteps);
+
+                // Hide loading overlay
+                document.getElementById('loading').classList.remove('show');
+
+                // Display logs in a Gen Z style
+                displayLogs(data.logs);
+
+                // Generate and display prediction summary
+                displayPredictionSummary(data.logs, timeValue, timeUnit);
+
+                // Success notification
+                showNotification(`🔥 Prediction completed for ${maxHours} hours (${timeValue} ${timeUnit})!`, 'success');
+            })
+            .catch(error => {
+                console.error('Error fetching prediction:', error);
+                document.getElementById('loading').classList.remove('show');
+                showNotification('❌ Server Connection Error. Check if FastAPI is running at http://127.0.0.1:8000 and Model is Loaded.', 'error');
+            });
+        }
+
+        // --- DISPLAY LOGS FUNCTION (Gen Z Style) ---
+        function displayLogs(logs) {
+            const existingLog = document.getElementById('log-container');
+            if (existingLog) existingLog.remove();
+
+            const logContainer = document.createElement('div');
+            logContainer.className = 'log-container';
+            logContainer.innerHTML = `
+                <div class="log-header">
+                    <span>🔥 FIRE SPREAD LOGS 🔥</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;">✕</button>
+                </div>
+                <div class="log-content">
+                    ${logs.map(log => `<div class="log-entry">${log}</div>`).join('')}
+                </div>
+            `;
+            document.body.appendChild(logContainer);
+
+            // Auto-remove after 15 seconds
+            setTimeout(() => {
+                if (logContainer.parentElement) {
+                    logContainer.remove();
+                }
+            }, 15000);
+        }
+
+        // --- NOTIFICATION FUNCTION ---
+        function showNotification(message, type) {
+            // Remove existing notifications
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerText = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 1001;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+            } else {
+                notification.style.background = 'linear-gradient(45deg, #dc3545, #fd7e14)';
+            }
+
+            document.body.appendChild(notification);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // --- MAP LAYER UPDATE ---
+        function updateMapLayer(hour) {
+            hour = parseInt(hour);
+            let timeUnit = document.getElementById('time-unit').value;
+            let timeValue = parseInt(document.getElementById('time-value').value);
+
+            // Convert hour back to display unit
+            let displayTime;
+            let displayUnit;
+            if (timeUnit === 'hours') {
+                displayTime = hour;
+                displayUnit = 'hours';
+            } else if (timeUnit === 'days') {
+                displayTime = Math.floor(hour / 24);
+                displayUnit = 'days';
+            } else if (timeUnit === 'weeks') {
+                displayTime = Math.floor(hour / (24 * 7));
+                displayUnit = 'weeks';
+            } else if (timeUnit === 'months') {
+                displayTime = Math.floor(hour / (24 * 30));
+                displayUnit = 'months';
+            } else if (timeUnit === 'years') {
+                displayTime = Math.floor(hour / (24 * 365));
+                displayUnit = 'years';
+            }
+
+            document.getElementById('current-time').innerText = `${displayTime} ${displayUnit} ${hour === 0 ? '(Initial)' : '(Predicted Spread)'}`;
+
+            // Remove existing visual layers (but keep base tile layer)
+            if (currentLayer) { map.removeLayer(currentLayer); currentLayer = null; }
+            if (currentHeat) { map.removeLayer(currentHeat); currentHeat = null; }
+
+            let hourKey = `${hour}h`;
+
+            if (simulationData[hourKey]) {
+                let geoJsonData = simulationData[hourKey];
+
+                // Build heat points: [lat, lng, intensity]
+                const features = geoJsonData.features || [];
+                const heatPoints = features.map(f => {
+                    const coords = f.geometry && f.geometry.coordinates ? f.geometry.coordinates : [0,0];
+                    const lng = coords[0];
+                    const lat = coords[1];
+                    // intensity: use prob_spread if available, fallback to normalized X_frp
+                    let intensity = (f.properties && (f.properties.prob_spread || f.properties.prob)) ? (f.properties.prob_spread || f.properties.prob) : ((f.properties && f.properties.X_frp) ? Math.min(1, f.properties.X_frp / 250) : 0.5);
+                    return [lat, lng, intensity];
+                }).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+
+                // Add heat layer for predicted timesteps (hour > 0)
+                if (hour > 0 && heatPoints.length > 0) {
+                    currentHeat = L.heatLayer(heatPoints, { radius: 25, blur: 30, maxZoom: 12, gradient: {0.2: '#feb24c', 0.4: '#fd8d3c', 0.6: '#e31a1c', 0.8: '#800026'} }).addTo(map);
+                }
+
+                // Also display circle markers for the initial fire (hour === 0)
+                if (hour === 0) {
+                    currentLayer = L.geoJson(geoJsonData, {
+                        pointToLayer: function (feature, latlng) {
+                            let prob = feature.properties.prob_spread || 1.0;
+                            let isInitial = hour === 0;
+
+                            return L.circleMarker(latlng, {
+                                radius: isInitial ? 12 : prob * 10 + 2,
+                                fillColor: isInitial ? "#FFA500" : getProbColor(prob),
+                                color: "#000",
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: prob * 0.8
+                            }).bindPopup(`<strong>${displayTime} ${displayUnit}</strong><br>Spread Prob: ${prob.toFixed(3)}<br>FRP: ${feature.properties && feature.properties.X_frp ? feature.properties.X_frp.toFixed(1) : 'N/A'}`);
+                        }
+                    }).addTo(map);
+
+                    // Fit bounds to initial marker(s) but keep zoom modest
+                    try {
+                        map.fitBounds(currentLayer.getBounds(), { maxZoom: 12 });
+                    } catch (e) { /* ignore fit errors when single point */ }
+                }
+            }
+        }
+
+        // --- ANIMATE FIRE SPREAD ---
+        // Global animation handle so we can pause/reset
+        let _animation = {
+            interval: null,
+            hours: [],
+            index: 0,
+            playing: false,
+            speedMs: 800
+        };
+
+        function animateSpread(data) {
+            simulationData = data;
+            let hours = Object.keys(data).sort((a, b) => parseInt(a.replace('h', '')) - parseInt(b.replace('h', '')));
+            _animation.hours = hours;
+            _animation.index = 0;
+
+            let maxHours = hours.length - 1;
+            document.getElementById('time-slider').max = maxHours;
+            document.getElementById('time-slider').value = 0;
+
+            // Start playing
+            _animation.playing = true;
+            document.getElementById('pause-btn').innerText = '⏸️ Pause';
+
+            // Clear previous interval if any
+            if (_animation.interval) clearInterval(_animation.interval);
+
+            _animation.interval = setInterval(() => {
+                if (!_animation.playing) return; // paused
+
+                if (_animation.index >= _animation.hours.length) {
+                    clearInterval(_animation.interval);
+                    _animation.playing = false;
+                    // Leave final frame displayed but allow reset
+                    return;
+                }
+
+                let hour = parseInt(_animation.hours[_animation.index].replace('h', ''));
+                updateMapLayer(hour);
+                document.getElementById('time-slider').value = hour;
+
+                // Update time display (simple hours to h m)
+                let hoursPart = Math.floor(hour);
+                let minutesPart = Math.round((hour - hoursPart) * 60);
+                document.getElementById('sim-time-display').innerText = `Time: ${hoursPart}h ${minutesPart}m`;
+
+                _animation.index++;
+            }, _animation.speedMs);
+        }
+
+
+
+        // Speed control handler
+        function updateSpeed(ms) {
+            ms = parseInt(ms);
+            _animation.speedMs = ms;
+            document.getElementById('speed-value').innerText = `${ms} ms/step`;
+
+            // If animation is running, restart interval to apply new speed immediately
+            if (_animation.interval) {
+                clearInterval(_animation.interval);
+                _animation.interval = setInterval(() => {
+                    if (!_animation.playing) return;
+                    if (_animation.index >= _animation.hours.length) { clearInterval(_animation.interval); _animation.playing = false; return; }
+                    let hour = parseInt(_animation.hours[_animation.index].replace('h', ''));
+                    updateMapLayer(hour);
+                    document.getElementById('time-slider').value = hour;
+                    let hoursPart = Math.floor(hour);
+                    let minutesPart = Math.round((hour - hoursPart) * 60);
+                    document.getElementById('sim-time-display').innerText = `Time: ${hoursPart}h ${minutesPart}m`;
+                    _animation.index++;
+                }, _animation.speedMs);
+            }
+        }
+
+        // Pause/Play animation handler
+        function pauseAnimation() {
+            _animation.playing = !_animation.playing;
+            document.getElementById('pause-btn').innerText = _animation.playing ? '⏸️ Pause' : '▶️ Play';
+        }
+
+        // Reset animation handler
+        function resetAnimation() {
+            if (_animation.interval) clearInterval(_animation.interval);
+            _animation.index = 0;
+            _animation.playing = false;
+            document.getElementById('pause-btn').innerText = '⏸️ Pause';
+            document.getElementById('time-slider').value = 0;
+            updateMapLayer(0);
+            document.getElementById('sim-time-display').innerText = 'Time: 0h 0m';
+        }
+        
+        // Page loaded - ready for user interaction
+        console.log('Forest Fire Prediction Tool loaded. Click "Run Prediction" to start simulation.');
+        
+        // Add a simple legend
+        var legend = L.control({position: 'bottomright'});
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                grades = [0.4, 0.6, 0.8],
+                labels = ['Low Risk', 'Medium Risk', 'High Risk', 'Very High Risk'];
+            
+            div.innerHTML += '<strong>Spread Risk</strong><br>';
+
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getProbColor(grades[i] + 0.01) + '"></i> ' +
+                    labels[i] + (grades[i + 1] ? '<br>' : '+');
+            }
+
+            return div;
+        };
+
+        // --- DISPLAY PREDICTION SUMMARY FUNCTION ---
+        function displayPredictionSummary(logs, timeValue, timeUnit) {
+            // Parse logs to extract key metrics
+            let totalCells = 0;
+            let highRiskCells = 0;
+            let maxSpreadDistance = 0;
+            let affectedArea = 0;
+
+            logs.forEach(log => {
+                // Extract numbers from logs using regex
+                const cellMatch = log.match(/(\d+)\s*cells?/i);
+                if (cellMatch) totalCells = Math.max(totalCells, parseInt(cellMatch[1]));
+
+                const highRiskMatch = log.match(/(\d+)\s*high\s*risk/i);
+                if (highRiskMatch) highRiskCells = Math.max(highRiskCells, parseInt(highRiskMatch[1]));
+
+                const distanceMatch = log.match(/(\d+(?:\.\d+)?)\s*km/i);
+                if (distanceMatch) maxSpreadDistance = Math.max(maxSpreadDistance, parseFloat(distanceMatch[1]));
+
+                const areaMatch = log.match(/(\d+(?:\.\d+)?)\s*hectares?/i);
+                if (areaMatch) affectedArea = Math.max(affectedArea, parseFloat(areaMatch[1]));
+            });
+
+            // Create summary list items
+            const summaryList = document.getElementById('summary-list');
+            summaryList.innerHTML = `
+                <li><strong>Total Predicted Cells:</strong> ${totalCells} cells analyzed for fire spread potential</li>
+                <li><strong>High Risk Areas:</strong> ${highRiskCells} cells identified with high spread probability (>0.6)</li>
+                <li><strong>Maximum Spread Distance:</strong> ${maxSpreadDistance.toFixed(1)} km from initial fire location</li>
+                <li><strong>Estimated Affected Area:</strong> ${affectedArea.toFixed(1)} hectares potentially impacted</li>
+                <li><strong>Prediction Timeline:</strong> ${timeValue} ${timeUnit} simulation completed</li>
+                <li><strong>Risk Assessment:</strong> ${highRiskCells > totalCells * 0.3 ? 'High' : highRiskCells > totalCells * 0.1 ? 'Medium' : 'Low'} overall risk level based on spread analysis</li>
+            `;
+
+            // Show the summary section
+            document.getElementById('summary-section').style.display = 'block';
+
+            // Generate and display charts
+            generateCharts(simulationData, logs);
+        }
+
+        // --- GENERATE CHARTS FUNCTION ---
+        function generateCharts(data, logs) {
+            const timeSteps = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
+            const spreadProbabilities = [];
+            const intensities = [];
+            const riskLevels = { low: 0, medium: 0, high: 0, veryHigh: 0 };
+            const distances = [];
+
+            timeSteps.forEach(step => {
+                const hour = parseInt(step);
+                const features = data[step].features || [];
+                let totalProb = 0;
+                let count = 0;
+                let maxIntensity = 0;
+
+                features.forEach(feature => {
+                    const prob = feature.properties.prob_spread || 0;
+                    const intensity = feature.properties.X_frp || 0;
+
+                    totalProb += prob;
+                    count++;
+                    maxIntensity = Math.max(maxIntensity, intensity);
+
+                    if (prob > 0.8) riskLevels.veryHigh++;
+                    else if (prob > 0.6) riskLevels.high++;
+                    else if (prob > 0.4) riskLevels.medium++;
+                    else riskLevels.low++;
+                });
+
+                spreadProbabilities.push(count > 0 ? totalProb / count : 0);
+                intensities.push(maxIntensity);
+                distances.push(hour * 0.5); // Approximate distance based on cellular automaton
+            });
+
+            // Spread Probability Distribution Chart
+            const spreadCtx = document.getElementById('spreadChart').getContext('2d');
+            new Chart(spreadCtx, {
+                type: 'line',
+                data: {
+                    labels: timeSteps.map(step => step.replace('h', 'h')),
+                    datasets: [{
+                        label: 'Average Spread Probability',
+                        data: spreadProbabilities,
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e0e0e0' } },
+                        y: { ticks: { color: '#e0e0e0' } }
+                    }
+                }
+            });
+
+            // Fire Intensity Over Time Chart
+            const intensityCtx = document.getElementById('intensityChart').getContext('2d');
+            new Chart(intensityCtx, {
+                type: 'bar',
+                data: {
+                    labels: timeSteps.map(step => step.replace('h', 'h')),
+                    datasets: [{
+                        label: 'Maximum Fire Intensity (FRP)',
+                        data: intensities,
+                        backgroundColor: '#4ecdc4',
+                        borderColor: '#4ecdc4',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e0e0e0' } },
+                        y: { ticks: { color: '#e0e0e0' } }
+                    }
+                }
+            });
+
+            // Risk Level Breakdown Chart
+            const riskCtx = document.getElementById('riskChart').getContext('2d');
+            new Chart(riskCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Very High Risk'],
+                    datasets: [{
+                        data: [riskLevels.low, riskLevels.medium, riskLevels.high, riskLevels.veryHigh],
+                        backgroundColor: ['#FEB24C', '#FD8D3C', '#E31A1C', '#800026'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0' } }
+                    }
+                }
+            });
+
+            // Spread Distance vs Time Chart
+            const distanceCtx = document.getElementById('distanceChart').getContext('2d');
+            new Chart(distanceCtx, {
+                type: 'line',
+                data: {
+                    labels: timeSteps.map(step => step.replace('h', 'h')),
+                    datasets: [{
+                        label: 'Estimated Spread Distance (km)',
+                        data: distances,
+                        borderColor: '#96ceb4',
+                        backgroundColor: 'rgba(150, 206, 180, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e0e0e0' } },
+                        y: { ticks: { color: '#e0e0e0' } }
+                    }
+                }
+            });
+
+            // Spread Probability vs. Fire Intensity Scatter Chart
+            const scatterData = [];
+            timeSteps.forEach(step => {
+                const features = data[step].features || [];
+                features.forEach(feature => {
+                    const prob = feature.properties.prob_spread || 0;
+                    const intensity = feature.properties.X_frp || 0;
+                    scatterData.push({ x: intensity, y: prob });
+                });
+            });
+
+            const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+            new Chart(scatterCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Spread Probability vs Fire Intensity',
+                        data: scatterData,
+                        backgroundColor: '#ff6b6b',
+                        borderColor: '#ff6b6b',
+                        borderWidth: 1,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0' } }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'Fire Intensity (FRP)',
+                                color: '#e0e0e0'
+                            },
+                            ticks: { color: '#e0e0e0' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Spread Probability',
+                                color: '#e0e0e0'
+                            },
+                            ticks: { color: '#e0e0e0' }
+                        }
+                    }
+                }
+            });
+
+            // Cumulative Affected Area Over Time Chart
+            const cumulativeAreas = [];
+            let totalArea = 0;
+
+            timeSteps.forEach(step => {
+                const features = data[step].features || [];
+                const areaIncrement = features.length * 0.25; // Approximate 0.25 hectares per cell
+                totalArea += areaIncrement;
+                cumulativeAreas.push(totalArea);
+            });
+
+            const areaCtx = document.getElementById('areaChart').getContext('2d');
+            new Chart(areaCtx, {
+                type: 'line',
+                data: {
+                    labels: timeSteps.map(step => step.replace('h', 'h')),
+                    datasets: [{
+                        label: 'Cumulative Affected Area (hectares)',
+                        data: cumulativeAreas,
+                        borderColor: '#45b7d1',
+                        backgroundColor: 'rgba(69, 183, 209, 0.2)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#45b7d1',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e0e0e0' } },
+                        y: {
+                            ticks: { color: '#e0e0e0' },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Show the charts section
+            document.getElementById('charts-section').style.display = 'block';
+        }
+
+        legend.addTo(map);
+    </script>
+</body>
+</html>
